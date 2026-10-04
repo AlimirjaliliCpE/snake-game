@@ -4,15 +4,22 @@ import sys
 
 pygame.init()
 
+
+
 CELL_SIZE = 20
 GRID_WIDTH = 30
 GRID_HEIGHT = 20
+
 SCREEN_WIDTH = CELL_SIZE * GRID_WIDTH
 SCREEN_HEIGHT = CELL_SIZE * GRID_HEIGHT
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Snake Game")
+
 clock = pygame.time.Clock()
+
+
+
 
 BLACK = (10, 10, 10)
 GREEN = (40, 200, 90)
@@ -20,148 +27,548 @@ DARK_GREEN = (25, 140, 60)
 RED = (220, 60, 60)
 WHITE = (240, 240, 240)
 GRAY = (60, 60, 60)
+YELLOW = (240, 200, 60)
+
+
+
 
 FONT = pygame.font.SysFont("consolas", 28)
 BIG_FONT = pygame.font.SysFont("consolas", 48)
+SMALL_FONT = pygame.font.SysFont("consolas", 20)
 
-FPS = 10 
+
+
+
+DIFFICULTIES = {
+    "EASY": {
+        "start_fps": 7,
+        "food_increase": 0.5,
+        "time_increase": 0.15,
+    },
+
+    "MEDIUM": {
+        "start_fps": 10,
+        "food_increase": 0.8,
+        "time_increase": 0.2,
+    },
+
+    "HARD": {
+        "start_fps": 14,
+        "food_increase": 1.0,
+        "time_increase": 0.3,
+    }
+}
+
+MAX_FPS = 30
+
+
 
 
 def draw_grid():
     for x in range(0, SCREEN_WIDTH, CELL_SIZE):
-        pygame.draw.line(screen, GRAY, (x, 0), (x, SCREEN_HEIGHT))
+        pygame.draw.line(
+            screen,
+            GRAY,
+            (x, 0),
+            (x, SCREEN_HEIGHT)
+        )
+
     for y in range(0, SCREEN_HEIGHT, CELL_SIZE):
-        pygame.draw.line(screen, GRAY, (0, y), (SCREEN_WIDTH, y))
+        pygame.draw.line(
+            screen,
+            GRAY,
+            (0, y),
+            (SCREEN_WIDTH, y)
+        )
+
+
 
 
 def random_food_position(snake_body):
+
     while True:
+
         pos = (
             random.randint(0, GRID_WIDTH - 1),
-            random.randint(0, GRID_HEIGHT - 1),
+            random.randint(0, GRID_HEIGHT - 1)
         )
+
         if pos not in snake_body:
             return pos
 
 
+
+
 def draw_snake(snake_body):
+
     for i, segment in enumerate(snake_body):
+
         rect = pygame.Rect(
             segment[0] * CELL_SIZE,
             segment[1] * CELL_SIZE,
             CELL_SIZE,
-            CELL_SIZE,
+            CELL_SIZE
         )
-        color = DARK_GREEN if i == 0 else GREEN 
-        pygame.draw.rect(screen, color, rect, border_radius=6)
+
+        color = DARK_GREEN if i == 0 else GREEN
+
+        pygame.draw.rect(
+            screen,
+            color,
+            rect,
+            border_radius=6
+        )
+
+
 
 
 def draw_food(food_pos):
-    center_x = food_pos[0] * CELL_SIZE + CELL_SIZE // 2
-    center_y = food_pos[1] * CELL_SIZE + CELL_SIZE // 2
-    radius = CELL_SIZE // 2 - 2
-    pygame.draw.circle(screen, RED, (center_x, center_y), radius)
 
-
-def show_message(text, y_offset=0, font=BIG_FONT, color=WHITE):
-    surface = font.render(text, True, color)
-    rect = surface.get_rect(
-        center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + y_offset)
+    center_x = (
+        food_pos[0] * CELL_SIZE
+        + CELL_SIZE // 2
     )
+
+    center_y = (
+        food_pos[1] * CELL_SIZE
+        + CELL_SIZE // 2
+    )
+
+    radius = CELL_SIZE // 2 - 2
+
+    pygame.draw.circle(
+        screen,
+        RED,
+        (center_x, center_y),
+        radius
+    )
+
+
+
+
+def show_message(
+    text,
+    y_offset=0,
+    font=BIG_FONT,
+    color=WHITE
+):
+
+    surface = font.render(
+        text,
+        True,
+        color
+    )
+
+    rect = surface.get_rect(
+        center=(
+            SCREEN_WIDTH // 2,
+            SCREEN_HEIGHT // 2 + y_offset
+        )
+    )
+
     screen.blit(surface, rect)
 
 
-def game_over_screen(score):
-    waiting = True
-    while waiting:
+
+
+def difficulty_menu():
+
+    difficulties = ["EASY", "MEDIUM", "HARD"]
+
+    selected = 1
+
+    while True:
+
         screen.fill(BLACK)
-        show_message("GAME OVER", -40)
-        show_message(f"Score: {score}", 10, FONT)
-        show_message("Press R to Restart or ESC to Quit", 60, FONT)
+
+      
+        show_message(
+            "SNAKE GAME",
+            -120,
+            BIG_FONT,
+            GREEN
+        )
+
+       
+        show_message(
+            "Select Difficulty",
+            -70,
+            FONT,
+            WHITE
+        )
+
+        for i, difficulty in enumerate(difficulties):
+
+            color = (
+                YELLOW
+                if i == selected
+                else WHITE
+            )
+
+            text = difficulty
+
+            if i == selected:
+                text = "> " + difficulty + " <"
+
+            show_message(
+                text,
+                -10 + i * 50,
+                FONT,
+                color
+            )
+
+        show_message(
+            "UP / DOWN: Select",
+            100,
+            SMALL_FONT,
+            GRAY
+        )
+
+        show_message(
+            "ENTER: Start",
+            125,
+            SMALL_FONT,
+            GRAY
+        )
+
+        show_message(
+            "ESC: Quit",
+            150,
+            SMALL_FONT,
+            GRAY
+        )
+
         pygame.display.flip()
 
+        
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    waiting = False
-                    return True  # restart
-                if event.key == pygame.K_ESCAPE:
-                    pygame.quit()
-                    sys.exit()
-        clock.tick(15)
 
+                if event.key == pygame.K_UP:
+                    selected -= 1
 
-def run_game():
-    start_x = GRID_WIDTH // 2
-    start_y = GRID_HEIGHT // 2
-    snake_body = [(start_x, start_y), (start_x - 1, start_y), (start_x - 2, start_y)]
+                    if selected < 0:
+                        selected = len(difficulties) - 1
 
-    direction = (1, 0) 
-    next_direction = direction
+                elif event.key == pygame.K_DOWN:
+                    selected += 1
 
-    food_pos = random_food_position(snake_body)
-    score = 0
+                    if selected >= len(difficulties):
+                        selected = 0
 
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP and direction != (0, 1):
-                    next_direction = (0, -1)
-                elif event.key == pygame.K_DOWN and direction != (0, -1):
-                    next_direction = (0, 1)
-                elif event.key == pygame.K_LEFT and direction != (1, 0):
-                    next_direction = (-1, 0)
-                elif event.key == pygame.K_RIGHT and direction != (-1, 0):
-                    next_direction = (1, 0)
+                elif event.key == pygame.K_RETURN:
+                    return difficulties[selected]
+
                 elif event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
 
+        clock.tick(15)
+
+
+
+def game_over_screen(score):
+
+    waiting = True
+
+    while waiting:
+
+        screen.fill(BLACK)
+
+        show_message(
+            "GAME OVER",
+            -40,
+            BIG_FONT,
+            RED
+        )
+
+        show_message(
+            f"Score: {score}",
+            10,
+            FONT,
+            WHITE
+        )
+
+        show_message(
+            "Press R to Restart",
+            60,
+            FONT,
+            GREEN
+        )
+
+        show_message(
+            "Press ESC to Quit",
+            100,
+            FONT,
+            WHITE
+        )
+
+        pygame.display.flip()
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+
+                if event.key == pygame.K_r:
+
+                    waiting = False
+                    return True
+
+                if event.key == pygame.K_ESCAPE:
+
+                    pygame.quit()
+                    sys.exit()
+
+        clock.tick(15)
+
+
+
+
+def run_game(difficulty):
+
+   
+
+    settings = DIFFICULTIES[difficulty]
+
+    start_fps = settings["start_fps"]
+    food_increase = settings["food_increase"]
+    time_increase = settings["time_increase"]
+
+    
+
+    start_x = GRID_WIDTH // 2
+    start_y = GRID_HEIGHT // 2
+
+    snake_body = [
+        (start_x, start_y),
+        (start_x - 1, start_y),
+        (start_x - 2, start_y)
+    ]
+
+   
+
+    direction = (1, 0)
+    next_direction = direction
+
+    
+
+    food_pos = random_food_position(
+        snake_body
+    )
+
+   
+
+    score = 0
+
+   
+
+    start_time = pygame.time.get_ticks()
+
+    running = True
+
+   
+
+    while running:
+
+        
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN:
+
+                if (
+                    event.key == pygame.K_UP
+                    and direction != (0, 1)
+                ):
+                    next_direction = (0, -1)
+
+                elif (
+                    event.key == pygame.K_DOWN
+                    and direction != (0, -1)
+                ):
+                    next_direction = (0, 1)
+
+                elif (
+                    event.key == pygame.K_LEFT
+                    and direction != (1, 0)
+                ):
+                    next_direction = (-1, 0)
+
+                elif (
+                    event.key == pygame.K_RIGHT
+                    and direction != (-1, 0)
+                ):
+                    next_direction = (1, 0)
+
+                elif event.key == pygame.K_ESCAPE:
+
+                    pygame.quit()
+                    sys.exit()
+
+       
+
         direction = next_direction
+
+      
+
         head_x, head_y = snake_body[0]
-        new_head = (head_x + direction[0], head_y + direction[1])
+
+        new_head = (
+            head_x + direction[0],
+            head_y + direction[1]
+        )
+
+        
+
         if (
             new_head[0] < 0
             or new_head[0] >= GRID_WIDTH
             or new_head[1] < 0
             or new_head[1] >= GRID_HEIGHT
         ):
-            return score  
-        if new_head in snake_body:
-            return score  
 
-        snake_body.insert(0, new_head)
+            return score
+
+      
+
+        if new_head in snake_body:
+
+            return score
+
+       
+
+        snake_body.insert(
+            0,
+            new_head
+        )
+
+     
+    
+
         if new_head == food_pos:
+
             score += 1
-            food_pos = random_food_position(snake_body)
+
+            food_pos = random_food_position(
+                snake_body
+            )
+
         else:
-            snake_body.pop() 
-            
+
+            snake_body.pop()
+
+      
+
+        elapsed_seconds = (
+            pygame.time.get_ticks()
+            - start_time
+        ) / 1000
+
+        time_speed = (
+            elapsed_seconds
+            * time_increase
+        )
+
+        food_speed = (
+            score
+            * food_increase
+        )
+
+     
+        current_fps = (
+            start_fps
+            + time_speed
+            + food_speed
+        )
+
+        
+        current_fps = min(
+            current_fps,
+            MAX_FPS
+        )
+
+     
+
         screen.fill(BLACK)
+
         draw_grid()
+
         draw_food(food_pos)
+
         draw_snake(snake_body)
 
-        score_surface = FONT.render(f"Score: {score}", True, WHITE)
-        screen.blit(score_surface, (10, 5))
+      
+
+        score_surface = FONT.render(
+            f"Score: {score}",
+            True,
+            WHITE
+        )
+
+        screen.blit(
+            score_surface,
+            (10, 5)
+        )
+
+        
+
+        difficulty_surface = SMALL_FONT.render(
+            f"{difficulty}",
+            True,
+            YELLOW
+        )
+
+        screen.blit(
+            difficulty_surface,
+            (SCREEN_WIDTH - 100, 8)
+        )
+
+       
 
         pygame.display.flip()
-        clock.tick(FPS)
+
+       
+
+        clock.tick(current_fps)
+
+
 
 
 def main():
+
     while True:
-        final_score = run_game()
-        restart = game_over_screen(final_score)
+
+       
+        difficulty = difficulty_menu()
+
+       
+        final_score = run_game(
+            difficulty
+        )
+
+        
+        restart = game_over_screen(
+            final_score
+        )
+
         if not restart:
             break
+
 
 
 if __name__ == "__main__":
