@@ -52,9 +52,6 @@ python main.py
 | R   | Restart    |
 | ESC | Quit       |
 
-## 📸 Screenshot
-
-*Add a screenshot of the game here.*
 
 ## 👨‍💻 Developer
 
